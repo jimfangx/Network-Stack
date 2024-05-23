@@ -1,0 +1,15 @@
+{
+    "C_Cpp.errorSquiggles": "enabled",
+    "C_Cpp.default.compilerPath": "/usr/bin/gcc",
+    "files.associations": {
+        "*.gs": "javascript",
+        "*.html": "html",
+        "*.jsx": "javascript",
+        "ioctl.h": "c",
+        "socket.h": "c",
+        "stdlib.h": "c",
+        "prctl.h": "c",
+        "tuntap_interface.h": "c",
+        "types.h": "c"
+    }
+}
