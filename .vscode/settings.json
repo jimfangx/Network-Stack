@@ -10,6 +10,9 @@
         "stdlib.h": "c",
         "prctl.h": "c",
         "tuntap_interface.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "inet.h": "c",
+        "syshead.h": "c",
+        "if.h": "c"
     }
 }

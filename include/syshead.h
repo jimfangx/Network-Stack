@@ -29,6 +29,7 @@
 #include <sys/un.h>
 #include <time.h>
 #include <unistd.h>
+#include <linux/if_ether.h>
 
 #endif
 
