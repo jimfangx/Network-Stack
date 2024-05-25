@@ -5,7 +5,10 @@
 int RUNNING = 1;
 
 int main() {
-  tun_init();
+
+  // 1. TUN TAP TEST:
+  // tun_init();
+  
 
   // char buf[1600];
 
@@ -16,7 +19,19 @@ int main() {
   // }
   //   free_tun();
 
-  net_dir_receive();
+  // 2. ethernet frame parsing test:
+  // tun_init();
+
+  // net_dir_receive();
+
+
+
+  // 3. ARP test
+  tun_init();
+  struct eth_self_properties *dev = init_eth_self("1c:b6:bf:a2:55:67", "10.0.3.50", 1500); // random mac address since pc3 is simulated/does not really exist
+  net_dir_receive(dev);
+
+  free_tun();
 
   return 0;
 }

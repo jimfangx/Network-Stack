@@ -29,9 +29,9 @@ https://stackoverflow.com/questions/35306080/parsing-ethernet-frames-and-data-ty
 #define ETH_ALEN 6
 
 struct eth_hdr {
-    u_int8_t ether_dhost[ETH_ALEN]; // destination mac
-    u_int8_t ether_shost[ETH_ALEN]; // source mac
-    u_int16_t ether_type;
+    uint8_t ether_dhost[ETH_ALEN]; // destination mac
+    uint8_t ether_shost[ETH_ALEN]; // source mac
+    uint16_t ether_type;
     // uint8_t payload[]; // not in official implementation
 } __attribute__ ((packed));
 

@@ -1,5 +1,5 @@
 /*
-Implementation of a doubly linked list for skbuff (*next/*prev
+Implementation of a doubly linked list for skbuff (*next AND *prev
 elements) seen in the linux src here:
 https://lxr.linux.no/linux+v2.6.20/include/linux/skbuff.h#L184
 

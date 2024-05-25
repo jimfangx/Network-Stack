@@ -58,7 +58,10 @@ int tun_read(char *buf, int nbyte) {
   return read(tun_fd, buf, nbyte);  // tun_fd will get set by our init func
 }
 
-int tun_write(char *buf, int nbyte) { return write(tun_fd, buf, nbyte); }
+int tun_write(char *buf, int nbyte) {
+  printf("writing...\n");
+  return write(tun_fd, buf, nbyte);
+}
 
 void tun_init() {
   // init our tun device name (max size IFNAMSIZ) + fd
