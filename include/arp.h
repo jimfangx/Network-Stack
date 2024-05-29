@@ -23,6 +23,7 @@ struct ipv4_over_eth_arp_pkt {
 
 // https://www.auvik.com/franklyit/blog/what-is-an-arp-table/
 // only implementing the stuff under ARP entry
+// host byte (little endian) order for proto addrs
 struct arp_table_entry {
     struct list_head list;
     uint16_t interface;
@@ -34,5 +35,7 @@ struct arp_table_entry {
 
 void arp_receive(struct sk_buff *skb, struct eth_self_properties *dev);
 void arp_reply(struct sk_buff *skb, struct eth_self_properties *dev, struct ipv4_over_eth_arp_pkt *arp_pkt);
+void arp_request(uint32_t TPA, struct eth_self_properties *dev);
+uint8_t* arp_table_lookup(uint32_t proto_addr);
 
 #endif

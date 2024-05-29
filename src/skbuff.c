@@ -24,6 +24,7 @@ struct sk_buff  *alloc_skb(unsigned int size) {
     skb->data = skb->head;
     skb->tail = skb->head;
     skb->end = skb->head + size;
+    skb->len = 0;
 
     list_init(&skb->list);
 

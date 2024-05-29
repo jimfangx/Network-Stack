@@ -59,7 +59,7 @@ int tun_read(char *buf, int nbyte) {
 }
 
 int tun_write(char *buf, int nbyte) {
-  printf("writing...\n");
+  printf("writing...\n------------\n");
   return write(tun_fd, buf, nbyte);
 }
 

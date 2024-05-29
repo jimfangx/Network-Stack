@@ -34,6 +34,8 @@ routing/translation table: uses a similar linked list structure as skbuff - this
 #define ARP_REQUEST 1
 #define ARP_REPLY 2
 
+uint8_t broadcast_hardware_addr[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+
 static LIST_HEAD(arp_cache_head);
 
 static int arp_table_entry_insert(struct ipv4_over_eth_arp_pkt *arp_pkt) {
@@ -46,7 +48,7 @@ static int arp_table_entry_insert(struct ipv4_over_eth_arp_pkt *arp_pkt) {
     arp_entry->PROTOCOL_ADDR = arp_pkt->SPA; // packet sender's protocol addr
     arp_entry->valid = 1;
     arp_entry->expiry = ((unsigned long)time(NULL)) + 86400000; // 24 hours later
-    memcpy(arp_entry->HARDWARE_ADDR, arp_pkt->SHA, sizeof(arp_entry->HARDWARE_ADDR));
+    memcpy(arp_entry->HARDWARE_ADDR, arp_pkt->SHA, ETH_ALEN);
 
     // add to linked list
     add_last(&arp_entry->list, &arp_cache_head);
@@ -67,7 +69,7 @@ static int arp_table_entry_exists_and_update(struct ipv4_over_eth_arp_pkt *arp_p
         // if eq, update hardware add in arp_table_entry, ret 1
         // else ret 0
         if (entry->interface == arp_pkt->HTYPE && entry->PROTOCOL_ADDR == arp_pkt->SPA) {
-            memcpy(entry->HARDWARE_ADDR, arp_pkt->SHA, sizeof(entry->HARDWARE_ADDR));
+            memcpy(entry->HARDWARE_ADDR, arp_pkt->SHA, ETH_ALEN);
             entry->expiry = ((unsigned long)time(NULL)) + 86400000; // 24 hrs later
             entry->valid = 1;
             
@@ -92,8 +94,8 @@ void arp_receive(struct sk_buff *skb, struct eth_self_properties *dev) {
     arp_pkt->SPA = ntohl(arp_pkt->SPA);
     arp_pkt->TPA = ntohl(arp_pkt->TPA);
 
-
     // begin arp algo: see rfc 826
+    // https://datatracker.ietf.org/doc/html/rfc826#autoid-1
 
     // ?Do I have the hardware type in ar$hrd?
     if (arp_pkt->HTYPE != HTYPE_ETHERNET) {
@@ -138,6 +140,13 @@ void arp_receive(struct sk_buff *skb, struct eth_self_properties *dev) {
         // bruh why 2
         if (arp_pkt->OPER == ARP_REQUEST) {
             // arp reply! pass the sk_buff packet we are taking in this func to reply - we can reuse the packet!
+            
+            // printf("ARP: replying...\n");
+            // printf("ARP: sender hardware addr: %02x:%02x:%02x:%02x:%02x:%02x\n", arp_pkt->SHA[0], arp_pkt->SHA[1], arp_pkt->SHA[2], arp_pkt->SHA[3], arp_pkt->SHA[4], arp_pkt->SHA[5]);
+            // printf("ARP: sender protocol addr: %x\n", arp_pkt->SPA);
+            // printf("ARP: target hardware addr: %02x:%02x:%02x:%02x:%02x:%02x\n", arp_pkt->THA[0], arp_pkt->THA[1], arp_pkt->THA[2], arp_pkt->THA[3], arp_pkt->THA[4], arp_pkt->THA[5]);
+            // printf("ARP: target protocol addr: %x\n", arp_pkt->TPA);
+
             arp_reply(skb, dev, arp_pkt);
             return;
         } else {
@@ -154,7 +163,7 @@ drop_packet:
 void arp_reply(struct sk_buff *skb, struct eth_self_properties *dev,
                struct ipv4_over_eth_arp_pkt *arp_pkt) {
   /*
-  rfc 826
+  rfc 826 https://datatracker.ietf.org/doc/html/rfc826#autoid-1
   Swap hardware and protocol fields, putting the local
           hardware and protocol addresses in the sender fields.
       Set the ar$op field to ares_op$REPLY
@@ -170,13 +179,18 @@ void arp_reply(struct sk_buff *skb, struct eth_self_properties *dev,
     // increase headroom & reduce tailroom
     skb_push(skb, sizeof(struct ipv4_over_eth_arp_pkt));
     
-    memcpy(arp_pkt->THA, arp_pkt->SHA, sizeof(arp_pkt->THA)); // target mac now = the original sender's mac
+    memcpy(arp_pkt->THA, arp_pkt->SHA, ETH_ALEN); // target mac now = the original sender's mac
     arp_pkt->TPA = arp_pkt->SPA; // targeted ip is now the original sender's ip
 
-    memcpy(arp_pkt->SHA, dev->HARDWARE_ADDR, sizeof(arp_pkt->SHA));
+    memcpy(arp_pkt->SHA, dev->HARDWARE_ADDR, ETH_ALEN);
     arp_pkt->SPA = dev->PROTOCOL_ADDR;
 
     arp_pkt->OPER = ARP_REPLY;
+
+    // printf("ARP REPLY: sender hardware addr: %02x:%02x:%02x:%02x:%02x:%02x\n", arp_pkt->SHA[0], arp_pkt->SHA[1], arp_pkt->SHA[2], arp_pkt->SHA[3], arp_pkt->SHA[4], arp_pkt->SHA[5]);
+    // printf("ARP REPLY: sender protocol addr: %x\n", arp_pkt->SPA);
+    // printf("ARP REPLY: target hardware addr: %02x:%02x:%02x:%02x:%02x:%02x\n", arp_pkt->THA[0], arp_pkt->THA[1], arp_pkt->THA[2], arp_pkt->THA[3], arp_pkt->THA[4], arp_pkt->THA[5]);
+    // printf("ARP REPLY: target protocol addr: %x\n", arp_pkt->TPA);
 
     // flip all arp_pkt fields from small endian to big endian
     arp_pkt->HTYPE = htons(arp_pkt->HTYPE);
@@ -192,4 +206,62 @@ void arp_reply(struct sk_buff *skb, struct eth_self_properties *dev,
     net_dir_transmit(skb, arp_pkt->THA, ETH_P_ARP);
     // cleanup
     free_skb(skb);
+}
+
+
+void arp_request(uint32_t TPA, struct eth_self_properties *dev) {
+
+    // create skb to hold our outgoing packet
+    struct sk_buff *skb = alloc_skb(sizeof(struct eth_hdr) + sizeof( struct ipv4_over_eth_arp_pkt));
+
+    // create our arp packet
+    struct ipv4_over_eth_arp_pkt *arp_pkt;
+
+    // increase headroom & reduce tailroom
+    skb_push(skb, sizeof(struct eth_hdr) + sizeof( struct ipv4_over_eth_arp_pkt));
+
+    skb->protocol = htons(ETH_P_ARP); // set skb packet protocol to be arp + convert to big endian
+
+    skb->dev = dev;
+
+    arp_pkt = (struct ipv4_over_eth_arp_pkt *)(skb->data);
+    
+    // set our arp packet properties
+
+
+    arp_pkt->HTYPE = htons(HTYPE_ETHERNET);
+    arp_pkt->PTYPE = htons(ETH_P_IP);
+
+    arp_pkt->HLEN = 6; // mac address length is 6
+    arp_pkt->PLEN = 4;  // ipv4 address length is 4
+    
+    arp_pkt->OPER = htons(ARP_REQUEST);
+
+    memcpy(arp_pkt->SHA, dev->HARDWARE_ADDR, sizeof(arp_pkt->SHA));
+
+    arp_pkt->SPA = htonl(dev->PROTOCOL_ADDR);
+
+    // set target hardware add to all ff
+    memcpy(arp_pkt->THA, broadcast_hardware_addr, sizeof(arp_pkt->THA));
+
+    arp_pkt->TPA = htonl(TPA);
+
+    net_dir_transmit(skb, broadcast_hardware_addr, ETH_P_ARP);
+    free_skb(skb);
+}
+
+uint8_t* arp_table_lookup(uint32_t proto_addr) {
+
+    struct list_head *list_item;
+    struct arp_table_entry *entry;
+
+    list_for_each(list_item, &arp_cache_head) {
+        entry = get_list_item(list_item, struct arp_table_entry, list);
+
+        if (entry->valid == 1 && entry->PROTOCOL_ADDR == proto_addr) {
+            return entry->HARDWARE_ADDR;
+        }
+    }
+
+    return NULL;
 }

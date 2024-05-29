@@ -15,7 +15,7 @@ https://lxr.linux.no/linux+v2.6.20/include/linux/skbuff.h#L184
 
 struct sk_buff {
     struct list_head list; // implements *next *prev
-    // struct routing_table_entry *rt;
+    struct routing_table_entry *rt;
     struct eth_self_properties *dev;
     uint32_t interface;
     uint16_t protocol; // 2 byte identifier

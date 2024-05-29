@@ -11,6 +11,7 @@ for receiving/incoming:
 #include "skbuff.h"
 #include "eth.h"
 #include "arp.h"
+#include "ip.h"
 #include "tuntap_interface.h"
 
 // https://ethernethistory.typepad.com/papers/EthernetSpec.pdf - page 32
@@ -69,14 +70,22 @@ int net_dir_transmit(struct sk_buff *skb, uint8_t *ether_dhost, uint16_t ether_t
   // cant use unpack_eth_hdr since we dont need to convert to small endian
   struct eth_hdr *outgoing_eth_hdr = (struct eth_hdr *)(skb->data);
 
-  memcpy(outgoing_eth_hdr->ether_dhost, ether_dhost,
-         sizeof(outgoing_eth_hdr->ether_dhost));
-  memcpy(outgoing_eth_hdr->ether_shost, dev->HARDWARE_ADDR,
-         sizeof(outgoing_eth_hdr->ether_shost));
+  memcpy(outgoing_eth_hdr->ether_dhost, ether_dhost, ETH_ALEN);
+    // memcpy(outgoing_eth_hdr->ether_dhost, ether_dhost, sizeof(outgoing_eth_hdr->ether_dhost));
+  memcpy(outgoing_eth_hdr->ether_shost, dev->HARDWARE_ADDR, ETH_ALEN);
+    // memcpy(outgoing_eth_hdr->ether_shost, dev->HARDWARE_ADDR, sizeof(outgoing_eth_hdr->ether_shost));
+
+    printf("ETHERNET HEADER\n");
+    printf("SRC MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", outgoing_eth_hdr->ether_shost[0], outgoing_eth_hdr->ether_shost[1], outgoing_eth_hdr->ether_shost[2], outgoing_eth_hdr->ether_shost[3], outgoing_eth_hdr->ether_shost[4], outgoing_eth_hdr->ether_shost[5]);
+    printf("DEST MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", outgoing_eth_hdr->ether_dhost[0], outgoing_eth_hdr->ether_dhost[1], outgoing_eth_hdr->ether_dhost[2], outgoing_eth_hdr->ether_dhost[3], outgoing_eth_hdr->ether_dhost[4], outgoing_eth_hdr->ether_dhost[5]);
+    printf("ETHER TYPE: %x\n", ether_type);
+    printf("SKB LEN: %d\n", skb->len);
 
   // remember that ether_type will be something like ETH_P_ARP... it is in small
   // endian and needs to be converted to big endian
   outgoing_eth_hdr->ether_type = htons(ether_type);
+
+    printf("ABOUT TO WRITE PACKET\n");
 
   return tun_write((char *)skb->data, skb->len);
 }
@@ -118,6 +127,8 @@ void net_dir_receive(struct eth_self_properties *dev) {
         } else if (header->ether_type == ETH_P_IP) { // direct to IP receive
 
             printf("DIRECTING TO IP\n");
+
+            ip_rcv(skb);
 
         }
 
