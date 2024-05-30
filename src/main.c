@@ -35,6 +35,15 @@ int main() {
   // free_tun();
 
   //4. ping 10.0.3.50 - the ping command should work now
+  // tun_init();
+  // struct eth_self_properties *dev = init_eth_self("1c:b6:bf:a2:55:67", "10.0.3.50", 1500);
+  // rt_init("10.0.50.0", dev); // init our routing table + add tun/tap interface gateway entry
+
+  // net_dir_receive(dev);
+  
+  // free_tun();
+
+  // 5. nmap -Pn 10.0.3.50 -p <any port> - should show the port as open
   tun_init();
   struct eth_self_properties *dev = init_eth_self("1c:b6:bf:a2:55:67", "10.0.3.50", 1500);
   rt_init("10.0.50.0", dev); // init our routing table + add tun/tap interface gateway entry

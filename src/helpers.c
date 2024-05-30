@@ -9,12 +9,28 @@ file containing some helper functions
 
 #define ODDBYTE(v) (v)
 
+// tcp u f*%$#r
+uint32_t sum_every_16(void *addr, int count) {
+  register uint32_t sum = 0;
+  uint16_t * ptr = addr;
+
+  while (count > 1) {
+    sum += * ptr++;
+    count-=2;
+  }
+
+  if (count > 0 ) sum += *(uint8_t *)ptr;
+
+  return sum;
+}
+
 // calculated in big endian
 uint16_t inet_checksum(void *addr, int count, int start_num) {
   /* Compute Internet Checksum for "count" bytes
    *         beginning at location "addr".
    * Taken from
    * https://github.com/iputils/iputils/blob/bacf1b7bb8555c407d065e97015319abef2a742d/ping/ping.c#L1497 with consideration of https://tools.ietf.org/html/rfc1071
+   *    * NOTE: the calculated checksum for ipv4 or icmp can be =/= to 0! 0 checksums only used for verification! 
    */
 
   register int nleft = count;

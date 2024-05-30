@@ -21,6 +21,7 @@ for receiving (from net_dir, if we identify incoming pkt as ipv4):
 #include "route.h"
 #include "arp.h"
 #include "icmp.h"
+#include "tcp.h"
 
 void ip_rcv(struct sk_buff *skb) {
     /*
@@ -101,6 +102,8 @@ void ip_rcv(struct sk_buff *skb) {
     } else if (recv_ip_hdr->protocol == TCP_PROTO_SIG) {
 
         printf("IP RECEIVE: Directing to TCP\n");
+
+        tcp_incoming(skb);
 
         return;
     } else {

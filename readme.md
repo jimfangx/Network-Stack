@@ -23,3 +23,8 @@ https://askubuntu.com/questions/783017/bash-proc-sys-net-ipv4-ip-forward-permiss
 `tcpdump -i <tun/tap name> icmp` - dumps icmp related things
 
 https://stackoverflow.com/questions/9334428/how-to-send-a-ping-packet
+
+## hooking tun/tap to internet
+https://stackoverflow.com/questions/67123324/sending-tun-tap-packets-to-destination-server
+https://unix.stackexchange.com/questions/588938/how-to-relay-traffic-from-tun-to-internet
+"connect tun device to internet"
