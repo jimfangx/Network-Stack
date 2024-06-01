@@ -23,8 +23,8 @@ https://stackoverflow.com/questions/35306080/parsing-ethernet-frames-and-data-ty
 #ifndef ETH_H_
 #define ETH_H_
 
-#include "syshead.h"
 #include "skbuff.h"
+#include "syshead.h"
 
 #define ETH_ALEN 6
 
@@ -33,15 +33,14 @@ struct eth_hdr {
     uint8_t ether_shost[ETH_ALEN]; // source mac
     uint16_t ether_type;
     // uint8_t payload[]; // not in official implementation
-} __attribute__ ((packed));
+} __attribute__((packed));
 
-
-static inline struct eth_hdr *unpack_eth_hdr(struct sk_buff *skb) {
+static inline struct eth_hdr *unpack_eth_hdr(struct sk_buff *skb)
+{
     struct eth_hdr *eth_hdr = (struct eth_hdr *)(skb->head);
     // convert ether_type from big endian -> small endian
     eth_hdr->ether_type = ntohs(eth_hdr->ether_type);
     return eth_hdr;
 };
-
 
 #endif

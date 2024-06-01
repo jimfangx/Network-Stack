@@ -7,6 +7,7 @@ This will be used in our ethernet parsing file
 */
 
 #include "tuntap_interface.h"
+
 #include "syshead.h"
 
 static char *dev;   // name of tun/tap device
@@ -40,26 +41,27 @@ static int tun_alloc(char *dev) {
       IFF_NO_PI;  // https://www.saminiir.com/lets-code-tcp-ip-stack-1-ethernet-arp/
                   // https://stackoverflow.com/questions/43449664/why-the-leading-4bytes-data-missing-when-sending-raw-bytes-data-to-a-tap-device
 
-  // using strncpy here: https://stackoverflow.com/questions/1003684/how-to-interface-with-the-linux-tun-driver
-  if (*dev) strncpy(ifr.ifr_name, dev, IFNAMSIZ); 
+  // using strncpy here:
+  // https://stackoverflow.com/questions/1003684/how-to-interface-with-the-linux-tun-driver
+  if (*dev) strncpy(ifr.ifr_name, dev, IFNAMSIZ);
 
   if ((err = ioctl(fd, TUNSETIFF, (void *)&ifr)) < 0) {
     perror("ioctl err");
     close(fd);
     return err;
   }
-  
+
   strcpy(dev, ifr.ifr_name);
   return fd;
 }
 
 int tun_read(char *buf, int nbyte) {
-    printf("reading...\n");
+  printf("TAP IF: reading...\n");
   return read(tun_fd, buf, nbyte);  // tun_fd will get set by our init func
 }
 
 int tun_write(char *buf, int nbyte) {
-  printf("writing...\n------------\n");
+  printf("TAP IF: writing...\n------------\n");
   return write(tun_fd, buf, nbyte);
 }
 

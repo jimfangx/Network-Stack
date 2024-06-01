@@ -1,11 +1,11 @@
 #ifndef ARP_H_
 #define ARP_H_
 
-#include "syshead.h"
-#include "skbuff.h"
-#include "eth.h"
 #include "dl_list.h"
+#include "eth.h"
 #include "net_dir.h"
+#include "skbuff.h"
+#include "syshead.h"
 
 // https://datatracker.ietf.org/doc/html/rfc826#autoid-1
 // https://en.wikipedia.org/wiki/Address_Resolution_Protocol#Packet_structure
@@ -19,7 +19,7 @@ struct ipv4_over_eth_arp_pkt {
     uint32_t SPA;
     uint8_t THA[6];
     uint32_t TPA;
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 // https://www.auvik.com/franklyit/blog/what-is-an-arp-table/
 // only implementing the stuff under ARP entry
@@ -36,6 +36,6 @@ struct arp_table_entry {
 void arp_receive(struct sk_buff *skb, struct eth_self_properties *dev);
 void arp_reply(struct sk_buff *skb, struct eth_self_properties *dev, struct ipv4_over_eth_arp_pkt *arp_pkt);
 void arp_request(uint32_t TPA, struct eth_self_properties *dev);
-uint8_t* arp_table_lookup(uint32_t proto_addr);
+uint8_t *arp_table_lookup(uint32_t proto_addr);
 
 #endif

@@ -18,7 +18,8 @@ skbuff will be the main carrier that carries our network data through the networ
 #include "skbuff.h"
 #include "dl_list.h"
 
-struct sk_buff  *alloc_skb(unsigned int size) {
+struct sk_buff *alloc_skb(unsigned int size)
+{
     struct sk_buff *skb = calloc(1, sizeof(struct sk_buff));
     skb->head = malloc(size);
     skb->data = skb->head;
@@ -31,18 +32,21 @@ struct sk_buff  *alloc_skb(unsigned int size) {
     return skb;
 }
 
-void *skb_reserve(struct sk_buff *skb, unsigned int len) {
-  skb->data += len;
-  return skb->data;
+void *skb_reserve(struct sk_buff *skb, unsigned int len)
+{
+    skb->data += len;
+    return skb->data;
 }
 
-uint8_t *skb_push(struct sk_buff *skb, unsigned int len) {
-  skb->data -= len;
-  skb->len += len;
-  return skb->data;
+uint8_t *skb_push(struct sk_buff *skb, unsigned int len)
+{
+    skb->data -= len;
+    skb->len += len;
+    return skb->data;
 }
 
-void free_skb(struct sk_buff *skb) {
+void free_skb(struct sk_buff *skb)
+{
     free(skb->head);
     free(skb);
 }

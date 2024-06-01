@@ -11,23 +11,23 @@ say this network stack is running on PC3. Our linux box that we initiate pings f
 
 SCENARIO 1: PC1 sends a ping to PC3.
 1. We need to receive that packet, update our translation table with the sender's hardware address (mac) & protocol address (IP)
-2. compare target IP address in the packet (target hardware address will be ff:ff:ff:ff:ff:ff for a arp ping). 
+2. compare target IP address in the packet (target hardware address will be ff:ff:ff:ff:ff:ff for a arp ping).
 3. if target IP equals our PC3's IP, respond with our hardware address (mac) & protocol address (IP) in the sender hardware address/protocol address respectively.
     aside: our PC3's hardware address, hardware address len, protocol address, protocl address len, protocol type, hardware type should be stored in a eth_self_properties struct and set in net_dir.c
 
 SCENARIO 2: PC3 wants to ping the rest of the network
 we need to implement a arp transmit func - to be implemented
-we specify target ip, target mac ff:ff:ff:ff:ff:ff 
+we specify target ip, target mac ff:ff:ff:ff:ff:ff
 
 routing/translation table: uses a similar linked list structure as skbuff - this struct is defined in arp.h
     - internal functions not in header to implement: arp_table_add(), arp_table_edit()
 */
 
-#include "syshead.h"
-#include "skbuff.h"
-#include "eth.h" // for ethernet header length
 #include "arp.h"
 #include "dl_list.h"
+#include "eth.h" // for ethernet header length
+#include "skbuff.h"
+#include "syshead.h"
 
 #define HTYPE_ETHERNET 1
 // https://en.wikipedia.org/wiki/Address_Resolution_Protocol#Operating_scope - 1 for request, 2 for reply
@@ -38,7 +38,8 @@ uint8_t broadcast_hardware_addr[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 static LIST_HEAD(arp_cache_head);
 
-static int arp_table_entry_insert(struct ipv4_over_eth_arp_pkt *arp_pkt) {
+static int arp_table_entry_insert(struct ipv4_over_eth_arp_pkt *arp_pkt)
+{
     // insert an entry into our arp table
     // we will call this function every time we have a new entry. the new entry will get tacked on to the last entry via the linked list in the arp_table_entry struct
     struct arp_table_entry *arp_entry = calloc(1, sizeof(struct arp_table_entry));
@@ -52,19 +53,21 @@ static int arp_table_entry_insert(struct ipv4_over_eth_arp_pkt *arp_pkt) {
 
     // add to linked list
     add_last(&arp_entry->list, &arp_cache_head);
-    
+
     // ret success
     return 0;
 }
 
 // check if entry exists in ARP table, if it does, update entry & ret 1, else ret 0
-static int arp_table_entry_exists_and_update(struct ipv4_over_eth_arp_pkt *arp_pkt){
+static int arp_table_entry_exists_and_update(struct ipv4_over_eth_arp_pkt *arp_pkt)
+{
     struct list_head *list_item;
     struct arp_table_entry *entry;
 
-    list_for_each(list_item, &arp_cache_head) {
+    list_for_each(list_item, &arp_cache_head)
+    {
         entry = get_list_item(list_item, struct arp_table_entry, list);
-        
+
         // check that every part of each entry other than the hardware address equals respective field in arp_pkt
         // if eq, update hardware add in arp_table_entry, ret 1
         // else ret 0
@@ -72,7 +75,7 @@ static int arp_table_entry_exists_and_update(struct ipv4_over_eth_arp_pkt *arp_p
             memcpy(entry->HARDWARE_ADDR, arp_pkt->SHA, ETH_ALEN);
             entry->expiry = ((unsigned long)time(NULL)) + 86400000; // 24 hrs later
             entry->valid = 1;
-            
+
             return 1;
         }
     }
@@ -80,8 +83,8 @@ static int arp_table_entry_exists_and_update(struct ipv4_over_eth_arp_pkt *arp_p
     return 0;
 }
 
-
-void arp_receive(struct sk_buff *skb, struct eth_self_properties *dev) {
+void arp_receive(struct sk_buff *skb, struct eth_self_properties *dev)
+{
     // set skb so it skips the ethernet data & allocate our ipv4_over_eth_arp_pkt
     struct ipv4_over_eth_arp_pkt *arp_pkt = (struct ipv4_over_eth_arp_pkt *)(skb->data + sizeof(struct eth_hdr));
 
@@ -99,16 +102,16 @@ void arp_receive(struct sk_buff *skb, struct eth_self_properties *dev) {
 
     // ?Do I have the hardware type in ar$hrd?
     if (arp_pkt->HTYPE != HTYPE_ETHERNET) {
-        printf("arp: unsupported hardware type (not ethernet)\n");
+        printf("ARP RECEIVE: unsupported hardware type (not ethernet)\n");
         goto drop_packet;
     }
     // ?Do I speak the protocol in ar$pro?
     // note arp uses ipv4
     if (arp_pkt->PTYPE != dev->PTYPE) {
-        printf("arp: unsupported protocol (not ipv4)\n");
+        printf("ARP RECEIVE: unsupported protocol (not ipv4)\n");
         goto drop_packet;
     }
-    
+
     int merge = 0;
 
     /*
@@ -117,21 +120,21 @@ void arp_receive(struct sk_buff *skb, struct eth_self_properties *dev) {
         hardware address field of the entry with the new
         information in the packet and set Merge_flag to true.
     */
-   merge = arp_table_entry_exists_and_update(arp_pkt);
+    merge = arp_table_entry_exists_and_update(arp_pkt);
 
-   // ?Am I the target protocol address?
-   // Yes:
-   // print protocol addr of dev
-    printf("ARP: dev->PROTOCOL_ADDR: %x\n", dev->PROTOCOL_ADDR);
-   if (arp_pkt->TPA == dev->PROTOCOL_ADDR) {
-        printf("ARP: ARP is for us!\n");
+    // ?Am I the target protocol address?
+    // Yes:
+    // print protocol addr of dev
+    printf("ARP RECEIVE: dev->PROTOCOL_ADDR: %x\n", dev->PROTOCOL_ADDR);
+    if (arp_pkt->TPA == dev->PROTOCOL_ADDR) {
+        printf("ARP RECEIVE: ARP is for us!\n");
         /*
         If Merge_flag is false, add the triplet <protocol type,
             sender protocol address, sender hardware address> to
             the translation table.
         */
         if (!merge && arp_table_entry_insert(arp_pkt) != 0) {
-            perror("ARP: arp table insert errored\n");
+            perror("ARP RECEIVE: arp table insert errored\n");
             exit(1);
         }
 
@@ -140,20 +143,21 @@ void arp_receive(struct sk_buff *skb, struct eth_self_properties *dev) {
         // bruh why 2
         if (arp_pkt->OPER == ARP_REQUEST) {
             // arp reply! pass the sk_buff packet we are taking in this func to reply - we can reuse the packet!
-            
-            // printf("ARP: replying...\n");
-            // printf("ARP: sender hardware addr: %02x:%02x:%02x:%02x:%02x:%02x\n", arp_pkt->SHA[0], arp_pkt->SHA[1], arp_pkt->SHA[2], arp_pkt->SHA[3], arp_pkt->SHA[4], arp_pkt->SHA[5]);
-            // printf("ARP: sender protocol addr: %x\n", arp_pkt->SPA);
-            // printf("ARP: target hardware addr: %02x:%02x:%02x:%02x:%02x:%02x\n", arp_pkt->THA[0], arp_pkt->THA[1], arp_pkt->THA[2], arp_pkt->THA[3], arp_pkt->THA[4], arp_pkt->THA[5]);
-            // printf("ARP: target protocol addr: %x\n", arp_pkt->TPA);
+
+            printf("~~~ARP RECEIVE: replying...~~~\n");
+            // printf("sender hardware addr: %02x:%02x:%02x:%02x:%02x:%02x\n", arp_pkt->SHA[0], arp_pkt->SHA[1], arp_pkt->SHA[2], arp_pkt->SHA[3], arp_pkt->SHA[4], arp_pkt->SHA[5]);
+            // printf("sender protocol addr: %x\n", arp_pkt->SPA);
+            // printf("target hardware addr: %02x:%02x:%02x:%02x:%02x:%02x\n", arp_pkt->THA[0], arp_pkt->THA[1], arp_pkt->THA[2], arp_pkt->THA[3], arp_pkt->THA[4], arp_pkt->THA[5]);
+            // printf("target protocol addr: %x\n", arp_pkt->TPA);
 
             arp_reply(skb, dev, arp_pkt);
             return;
-        } else {
-            printf("ARP: OPCODE not supported\n");
+        }
+        else {
+            printf("ARP RECEIVE: OPCODE not supported\n");
             goto drop_packet;
         }
-   }
+    }
 
 drop_packet:
     free_skb(skb);
@@ -161,26 +165,27 @@ drop_packet:
 }
 
 void arp_reply(struct sk_buff *skb, struct eth_self_properties *dev,
-               struct ipv4_over_eth_arp_pkt *arp_pkt) {
-  /*
-  rfc 826 https://datatracker.ietf.org/doc/html/rfc826#autoid-1
-  Swap hardware and protocol fields, putting the local
-          hardware and protocol addresses in the sender fields.
-      Set the ar$op field to ares_op$REPLY
-      Send the packet to the (new) target hardware address on
-          the same hardware on which the request was received.
+               struct ipv4_over_eth_arp_pkt *arp_pkt)
+{
+    /*
+    rfc 826 https://datatracker.ietf.org/doc/html/rfc826#autoid-1
+    Swap hardware and protocol fields, putting the local
+            hardware and protocol addresses in the sender fields.
+        Set the ar$op field to ares_op$REPLY
+        Send the packet to the (new) target hardware address on
+            the same hardware on which the request was received.
 
 
-  NOTE: since arp_pkt is casted from skb in arp_receive, we only need to modify arp_pkt and skb will get modified as well
-  */
+    NOTE: since arp_pkt is casted from skb in arp_receive, we only need to modify arp_pkt and skb will get modified as well
+    */
 
     // extend used data area of buffer at buffer start - if it exceeds buffer headroom, we kernel panic (err)
     skb_reserve(skb, sizeof(struct eth_hdr) + sizeof(struct ipv4_over_eth_arp_pkt));
     // increase headroom & reduce tailroom
     skb_push(skb, sizeof(struct ipv4_over_eth_arp_pkt));
-    
+
     memcpy(arp_pkt->THA, arp_pkt->SHA, ETH_ALEN); // target mac now = the original sender's mac
-    arp_pkt->TPA = arp_pkt->SPA; // targeted ip is now the original sender's ip
+    arp_pkt->TPA = arp_pkt->SPA;                  // targeted ip is now the original sender's ip
 
     memcpy(arp_pkt->SHA, dev->HARDWARE_ADDR, ETH_ALEN);
     arp_pkt->SPA = dev->PROTOCOL_ADDR;
@@ -208,33 +213,32 @@ void arp_reply(struct sk_buff *skb, struct eth_self_properties *dev,
     free_skb(skb);
 }
 
-
-void arp_request(uint32_t TPA, struct eth_self_properties *dev) {
+void arp_request(uint32_t TPA, struct eth_self_properties *dev)
+{
 
     // create skb to hold our outgoing packet
-    struct sk_buff *skb = alloc_skb(sizeof(struct eth_hdr) + sizeof( struct ipv4_over_eth_arp_pkt));
+    struct sk_buff *skb = alloc_skb(sizeof(struct eth_hdr) + sizeof(struct ipv4_over_eth_arp_pkt));
 
     // create our arp packet
     struct ipv4_over_eth_arp_pkt *arp_pkt;
 
     // increase headroom & reduce tailroom
-    skb_push(skb, sizeof(struct eth_hdr) + sizeof( struct ipv4_over_eth_arp_pkt));
+    skb_push(skb, sizeof(struct eth_hdr) + sizeof(struct ipv4_over_eth_arp_pkt));
 
     skb->protocol = htons(ETH_P_ARP); // set skb packet protocol to be arp + convert to big endian
 
     skb->dev = dev;
 
     arp_pkt = (struct ipv4_over_eth_arp_pkt *)(skb->data);
-    
-    // set our arp packet properties
 
+    // set our arp packet properties
 
     arp_pkt->HTYPE = htons(HTYPE_ETHERNET);
     arp_pkt->PTYPE = htons(ETH_P_IP);
 
     arp_pkt->HLEN = 6; // mac address length is 6
-    arp_pkt->PLEN = 4;  // ipv4 address length is 4
-    
+    arp_pkt->PLEN = 4; // ipv4 address length is 4
+
     arp_pkt->OPER = htons(ARP_REQUEST);
 
     memcpy(arp_pkt->SHA, dev->HARDWARE_ADDR, sizeof(arp_pkt->SHA));
@@ -250,12 +254,14 @@ void arp_request(uint32_t TPA, struct eth_self_properties *dev) {
     free_skb(skb);
 }
 
-uint8_t* arp_table_lookup(uint32_t proto_addr) {
+uint8_t *arp_table_lookup(uint32_t proto_addr)
+{
 
     struct list_head *list_item;
     struct arp_table_entry *entry;
 
-    list_for_each(list_item, &arp_cache_head) {
+    list_for_each(list_item, &arp_cache_head)
+    {
         entry = get_list_item(list_item, struct arp_table_entry, list);
 
         if (entry->valid == 1 && entry->PROTOCOL_ADDR == proto_addr) {

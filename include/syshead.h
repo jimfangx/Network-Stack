@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/if.h>
+#include <linux/if_ether.h>
 #include <linux/if_tun.h>
 #include <linux/types.h>
 #include <netdb.h>
@@ -29,10 +30,5 @@
 #include <sys/un.h>
 #include <time.h>
 #include <unistd.h>
-#include <linux/if_ether.h>
 
 #endif
-
-
-
-

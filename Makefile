@@ -1,3 +1,6 @@
+# This was my first time writing a makefile so this is likely badly written.
+# Guide: https://www.cs.colostate.edu/~cs157/LectureMakefile.pdf
+
 # Compiler
 CC := gcc
 

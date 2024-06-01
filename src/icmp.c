@@ -4,21 +4,21 @@ Internet Controm Message Protocol ICMP implementation
 RFCs:
 792 - https://datatracker.ietf.org/doc/html/rfc792
 
-functions to implement: 
+functions to implement:
 icmp receive
 icmp reply
 
 */
 
-#include "syshead.h"
 #include "icmp.h"
 #include "eth.h"
-#include "ip.h"
 #include "helpers.h"
+#include "ip.h"
+#include "syshead.h"
 #include "tcp_sockets.h"
 
-
-void icmp_receive(struct sk_buff *skb) {
+void icmp_receive(struct sk_buff *skb)
+{
 
     // move skb to the right place - base hdr first
     struct ip_hdr *temp_ip_hdr = (struct ip_hdr *)(skb->head + sizeof(struct eth_hdr));
@@ -52,26 +52,26 @@ void icmp_receive(struct sk_buff *skb) {
         goto drop_pkt;
     }
     else if (base_hdr->type == ICMP_TYPE_TIME_EXCEED) {
-      printf(
-          "ICMP: Received time exceeded (likely returns from a "
-          "request this program has sent). code: %02u\n",
-          base_hdr->code);
-      goto drop_pkt;
+        printf(
+            "ICMP: Received time exceeded (likely returns from a "
+            "request this program has sent). code: %02u\n",
+            base_hdr->code);
+        goto drop_pkt;
     }
     else if (base_hdr->type == ICMP_TYPE_ECHO_REPLY) {
-      printf(
-          "ICMP: Received successful echo reply (likely returns from a "
-          "request this program has sent).\n");
-      goto drop_pkt;
+        printf(
+            "ICMP: Received successful echo reply (likely returns from a "
+            "request this program has sent).\n");
+        goto drop_pkt;
     }
 
-
-    drop_pkt:
-        free_skb(skb);
-        return;
+drop_pkt:
+    free_skb(skb);
+    return;
 }
 
-void icmp_reply(struct sk_buff *skb) {
+void icmp_reply(struct sk_buff *skb)
+{
 
     /*
     set reply params
@@ -91,15 +91,13 @@ void icmp_reply(struct sk_buff *skb) {
     skb_reserve(skb, sizeof(struct eth_hdr) + sizeof(struct ip_hdr) + icmp_len);
     skb_push(skb, icmp_len);
 
-
     // cast icmp header from ipheader data
     struct icmp_base_hdr *reply_icmp = (struct icmp_base_hdr *)(skb->data);
 
-    
     reply_icmp->type = ICMP_TYPE_ECHO_REPLY;
 
     reply_icmp->code = 0x00; // defined in rfc 792
-    
+
     // extract icmp_echo_addtions
     struct icmp_echo_additions *echo_additions = (struct icmp_echo_additions *)(reply_icmp->data);
     // print id & seq
@@ -117,7 +115,7 @@ void icmp_reply(struct sk_buff *skb) {
     printf("ICMP: Seq: %d\n", ntohs(echo_additions->seq_num));
     printf("ICMP: Type: %d\n", reply_icmp->type);
     printf("ICMP: Code: %d\n", reply_icmp->code);
- 
+
     skb->protocol = ICMP_PROTO_SIG;
 
     sock.dest_addr = reply_ip_hdr->src_addr; // we will sort out the rest of the ip_hdr fields in the ip_transmit func

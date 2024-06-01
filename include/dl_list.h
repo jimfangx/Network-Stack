@@ -26,41 +26,46 @@ struct list_head {
 // define all static inline functions in the header file:
 // https://stackoverflow.com/questions/5526461/gcc-warning-function-used-but-not-defined
 
-static inline void list_init(struct list_head *head) {
-  head->next = head;
-  head->prev = head;
+static inline void list_init(struct list_head *head)
+{
+    head->next = head;
+    head->prev = head;
 }
 
-static inline void add_first(struct list_head *new_element, struct list_head *head) {
-  new_element->next = head->next;
-  new_element->prev = head;
-  head->next->prev = new_element;
-  head->next = new_element;
+static inline void add_first(struct list_head *new_element, struct list_head *head)
+{
+    new_element->next = head->next;
+    new_element->prev = head;
+    head->next->prev = new_element;
+    head->next = new_element;
 }
 
-static inline void add_last(struct list_head *new_element, struct list_head *head) {
-  new_element->next = head;
-  new_element->prev = head->prev;
-  head->prev->next = new_element;
-  head->prev = new_element;
+static inline void add_last(struct list_head *new_element, struct list_head *head)
+{
+    new_element->next = head;
+    new_element->prev = head->prev;
+    head->prev->next = new_element;
+    head->prev = new_element;
 }
 
-static inline void remove_elem(struct list_head *elem_to_remove) {
-  elem_to_remove->prev->next = elem_to_remove->next;
-  elem_to_remove->next->prev = elem_to_remove->prev;
+static inline void remove_elem(struct list_head *elem_to_remove)
+{
+    elem_to_remove->prev->next = elem_to_remove->next;
+    elem_to_remove->next->prev = elem_to_remove->prev;
 }
 
-static inline int is_list_empty(struct list_head *head) {
-  return head->next == head;
+static inline int is_list_empty(struct list_head *head)
+{
+    return head->next == head;
 }
 
 #define get_list_item(ptr, type, member) \
-  ((type *)((char *)(ptr) - offsetof(type, member)))
+    ((type *)((char *)(ptr) - offsetof(type, member)))
 
 #define get_list_first_entry(ptr, type, member) \
-  get_list_item((ptr)->next, type, member)
+    get_list_item((ptr)->next, type, member)
 
 #define list_for_each(pos, head) \
-  for (pos = (head)->next; pos != (head); pos = pos->next)
+    for (pos = (head)->next; pos != (head); pos = pos->next)
 
 #endif

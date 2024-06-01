@@ -8,8 +8,8 @@ https://lxr.linux.no/linux+v2.6.20/include/linux/skbuff.h#L184
 #define SK_BUFF_H_
 
 #include "dl_list.h"
-#include "route.h"
 #include "net_dir.h"
+#include "route.h"
 #include <pthread.h>
 #include <stdint.h>
 
@@ -19,7 +19,7 @@ struct sk_buff {
     struct eth_self_properties *dev;
     uint32_t interface;
     uint16_t protocol; // 2 byte identifier
-    uint32_t len; // length of packet
+    uint32_t len;      // length of packet
     uint8_t *head;
     uint8_t *data;
     uint8_t *tail;
