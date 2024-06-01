@@ -4,7 +4,11 @@
 There was some initial debate on the environment to write this on. 
 
 A large part of the decision came down to whether it was possible grab L2 data from the kernel. I wanted to grab L2 data as that would've meant the ability to implement another (lower!) layer.
+
 <img src="https://upload.wikimedia.org/wikipedia/commons/a/af/Tun-tap-osilayers-diagram.png" width="500px">
+
+(https://en.wikipedia.org/wiki/TUN/TAP)
+
 
 The following is some discoveries made along the way of making that decision:
 
