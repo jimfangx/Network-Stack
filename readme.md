@@ -47,7 +47,8 @@ The compiled binary is `/bin/main`
 Check `src/main.c` for segmented tests.
 
 ### Configuring ARPing updates kernel ARP Table
-`sudo bash -c 'echo 1 > /proc/sys/net/ipv4/conf/eth0/arp_accept'`
+Replace `<tuntap IF name>` with your IF name (tun0, tap0, etc)
+`sudo bash -c 'echo 1 > /proc/sys/net/ipv4/conf/<tuntap IF name>/arp_accept'`
 
 See: https://www.spinics.net/lists/netdev/msg314093.html & https://askubuntu.com/questions/783017/bash-proc-sys-net-ipv4-ip-forward-permission-denied
 
